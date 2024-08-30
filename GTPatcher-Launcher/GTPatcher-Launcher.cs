@@ -4,6 +4,8 @@ using static Constants;
 using System.Net.Http.Headers;
 using GTPatcher_Launcher.Utilities;
 using Microsoft.Win32;
+using System.Security.Policy;
+using System.IO.Compression;
 
 namespace GTPatcher_Launcher
 {
@@ -101,6 +103,19 @@ namespace GTPatcher_Launcher
             }
         }
 
+        async void DownloadBepinex(BuildInfo selectedBuild, string installPath)
+        {
+            string zipPath = installPath + "\\Bpinex.zip";
+            using (HttpClient client = new HttpClient())
+            {
+                byte[] zipFileBytes = await client.GetByteArrayAsync(BEPINEX_LINK);
+                File.WriteAllBytes(zipPath, zipFileBytes);
+            }
+            ZipFile.ExtractToDirectory(zipPath, installPath);
+
+            File.Delete(zipPath);
+        }
+
         private void SaveSettings()
         {
             RegistryKey key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\GTPatcherLauncher");
@@ -112,6 +127,7 @@ namespace GTPatcher_Launcher
 
         private int InstallGame(BuildInfo selectedBuild, string installPath)
         {
+            DownloadBepinex(selectedBuild, installPath);
             if ((bool)selectedBuild.IsSteam)
             {
                 var exitCode = SteamHelper.DownloadManifest((ulong)selectedBuild.ManifestId, installPath, steamAccountUsername.Text, (bool)selectedBuild.IsBeta);
